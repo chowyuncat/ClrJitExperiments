@@ -86,9 +86,9 @@ public:
     {
         OutputDebugString(__FUNCTIONW__);
 
-        ICorProfilerInfo *pCorProfilerInfo = NULL;
+        ICorProfilerInfo2 *pCorProfilerInfo = NULL;
         HRESULT hr = pICorProfilerInfoUnk->QueryInterface(
-            IID_ICorProfilerInfo,
+            IID_ICorProfilerInfo2,
             (LPVOID* )&pCorProfilerInfo );
 
         if ( FAILED(hr) )
@@ -112,6 +112,8 @@ public:
             OutputDebugString( L"pICorProfilerInf->SetEnterLeaveFunctionHooks FAILED\r\n" );
             return hr;
         }
+
+        m_pICorProfilerInfo2 = pCorProfilerInfo;
 
 #if 0
         ICorProfilerInfo2 *pICorProfilerInfo2 = NULL;
@@ -416,6 +418,7 @@ public:
 
 private:
     ULONG m_ref_count;
+    CComQIPtr<ICorProfilerInfo2> m_pICorProfilerInfo2;
 };
 
 
