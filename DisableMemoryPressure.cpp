@@ -9,6 +9,16 @@
 #include <Cor.h>
 #include <CorProf.h>
 
+#include <stdio.h> // _snprintf
+
+#include <atlcomcli.h> // CComPtr
+
+#include <map>
+
+// TODO: HACK:
+#define NAME_BUFFER_SIZE 1024
+
+#if 0
 void __declspec(naked) FunctionEnterNaked(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO func, COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo)
 {
 
@@ -23,9 +33,168 @@ void __declspec(naked) FunctionTailcallNaked(FunctionID functionID, UINT_PTR cli
 {
 
 }
+#endif
+
+
+// this function simply forwards the FunctionEnter call the global profiler object
+void __stdcall FunctionEnterGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo, COR_PRF_FUNCTION_ARGUMENT_INFO *argInfo)
+{
+	// make sure the global reference to our profiler is valid
+    //if (g_pICorProfilerCallback != NULL)
+    //    g_pICorProfilerCallback->Enter(functionID, clientData, frameInfo, argInfo);
+    // argInfo->
+}
+
+// this function is called by the CLR when a function has been entered
+void _declspec(naked) FunctionEnterNaked(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO func, COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo)
+{
+    __asm
+    {
+        push    ebp                 // Create a standard frame
+        mov     ebp,esp
+        pushad                      // Preserve all registers
+
+        mov     eax,[ebp+0x14]      // argumentInfo
+        push    eax
+        mov     ecx,[ebp+0x10]      // func
+        push    ecx
+        mov     edx,[ebp+0x0C]      // clientData
+        push    edx
+        mov     eax,[ebp+0x08]      // functionID
+        push    eax
+        call    FunctionEnterGlobal
+
+        popad                       // Restore all registers
+        pop     ebp                 // Restore EBP
+        ret     16
+    }
+}
+
+// this function simply forwards the FunctionLeave call the global profiler object
+void __stdcall FunctionLeaveGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo, COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange)
+{
+	// make sure the global reference to our profiler is valid
+    //if (g_pICorProfilerCallback != NULL)
+    //    g_pICorProfilerCallback->Leave(functionID,clientData,frameInfo,retvalRange);
+}
+
+// this function is called by the CLR when a function is exiting
+void _declspec(naked) FunctionLeaveNaked(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO func, COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange)
+{
+    __asm
+    {
+        push    ebp                 // Create a standard frame
+        mov     ebp,esp
+        pushad                      // Preserve all registers
+
+        mov     eax,[ebp+0x14]      // argumentInfo
+        push    eax
+        mov     ecx,[ebp+0x10]      // func
+        push    ecx
+        mov     edx,[ebp+0x0C]      // clientData
+        push    edx
+        mov     eax,[ebp+0x08]      // functionID
+        push    eax
+        call    FunctionLeaveGlobal
+
+        popad                       // Restore all registers
+        pop     ebp                 // Restore EBP
+        ret     16
+    }
+}
+
+// this function simply forwards the FunctionLeave call the global profiler object
+void __stdcall FunctionTailcallGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo)
+{
+    //if (g_pICorProfilerCallback != NULL)
+    //    g_pICorProfilerCallback->Tailcall(functionID,clientData,frameInfo);
+}
+
+// this function is called by the CLR when a tailcall occurs.  A tailcall occurs when the 
+// last action of a method is a call to another method.
+void _declspec(naked) FunctionTailcallNaked(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO func)
+{
+    __asm
+    {
+        push    ebp                 // Create a standard frame
+        mov     ebp,esp
+        pushad                      // Preserve all registers
+
+        mov     eax,[ebp+0x14]      // argumentInfo
+        push    eax
+        mov     ecx,[ebp+0x10]      // func
+        push    ecx
+        mov     edx,[ebp+0x0C]      // clientData
+        push    edx
+        mov     eax,[ebp+0x08]      // functionID
+        push    eax
+        call    FunctionTailcallGlobal
+
+        popad                       // Restore all registers
+        pop     ebp                 // Restore EBP
+        ret     16
+    }
+}
+
+
+// this function is called by the CLR when a function has been mapped to an ID
+// static UINT_PTR __stdcall FunctionMapper(FunctionID functionID, BOOL *pbHookFunction);
+static FunctionIDMapper FunctionMapper;
+
+
+// creates the fully scoped name of the method in the provided buffer
+static HRESULT GetFullMethodName(ICorProfilerInfo2 *pProfilerInfo, FunctionID functionID, LPWSTR wszMethod, int cMethod)
+{
+	IMetaDataImport* pIMetaDataImport = 0;
+	HRESULT hr = S_OK;
+	mdToken funcToken = 0;
+	WCHAR szFunction[NAME_BUFFER_SIZE];
+	WCHAR szClass[NAME_BUFFER_SIZE];
+
+	// get the token for the function which we will use to get its name
+	hr = pProfilerInfo->GetTokenAndMetaDataFromFunction(functionID, IID_IMetaDataImport, (LPUNKNOWN *) &pIMetaDataImport, &funcToken);
+	if(SUCCEEDED(hr))
+	{
+#if 1
+  
+
+		mdTypeDef classTypeDef;
+		ULONG cchFunction;
+		ULONG cchClass;
+
+		// retrieve the function properties based on the token
+		hr = pIMetaDataImport->GetMethodProps(funcToken, &classTypeDef, szFunction, NAME_BUFFER_SIZE, &cchFunction, 0, 0, 0, 0, 0);
+		if (SUCCEEDED(hr))
+		{
+			// get the function name
+			hr = pIMetaDataImport->GetTypeDefProps(classTypeDef, szClass, NAME_BUFFER_SIZE, &cchClass, 0, 0);
+			if (SUCCEEDED(hr))
+			{
+				// create the fully qualified name
+				_snwprintf_s(wszMethod,cMethod,cMethod,L"%s.%s",szClass,szFunction);
+                OutputDebugStringW(wszMethod);
+			}
+		}
+		// release our reference to the metadata
+#endif
+		pIMetaDataImport->Release();
+	}
+    else
+    {
+        char msg[1024] = {0};
+        _snprintf(msg, 1023, "MapFunction failed on %i\r\n", functionID);
+        OutputDebugStringA(msg);
+    }
+
+	return hr;
+}
+
+
 
 MyProfiler *g_pThisMyProfiler = NULL;
 LONG g_cServerLocks = 0; // to count server locks
+
+
 
 
 class MyProfiler : public ICorProfilerCallback2
@@ -44,6 +213,65 @@ public:
         g_pThisMyProfiler = NULL;
     }
 
+    typedef std::map<FunctionID, std::wstring>::const_iterator FunctionIdMapIterator ;
+    std::map<FunctionID, std::wstring> m_functionIdToNameMap;
+
+    void MapFunction(FunctionID functionID)
+    {
+        const FunctionIdMapIterator i = m_functionIdToNameMap.find(functionID);
+        if (i != m_functionIdToNameMap.end())
+        {
+            OutputDebugStringA("********** Cached...");
+            OutputDebugStringW(i->second.c_str());
+            return;
+        }
+
+        WCHAR szMethodName[NAME_BUFFER_SIZE + 1] = { 0 };
+		// const WCHAR* p = NULL; //TODO WTF?
+		// USES_CONVERSION;
+
+		// get the method name
+		HRESULT hr = GetFullMethodName(m_pICorProfilerInfo2, functionID, szMethodName, NAME_BUFFER_SIZE);
+		if (FAILED(hr))
+		{
+			// if we couldn't get the function name, then log it
+            char msg[1024] = {0};
+			_snprintf(msg, 1023, "Unable to find the name for %i\r\n", functionID);
+            OutputDebugStringA(msg);
+			return;
+		}
+
+        m_functionIdToNameMap[functionID] = szMethodName;
+
+        // OutputDebugStringW(szMethodName);
+
+#if 0
+	    // see if this function is in the map
+	    CFunctionInfo* functionInfo = NULL;
+	    std::map<FunctionID, CFunctionInfo*>::iterator iter = m_functionMap.find(functionID);
+	    if (iter == m_functionMap.end())
+	    {
+		    // declared in this block so they are not created if the function is found
+		    WCHAR szMethodName[NAME_BUFFER_SIZE];
+		    const WCHAR* p = NULL;
+		    USES_CONVERSION;
+
+		    // get the method name
+		    HRESULT hr = GetFullMethodName(functionID, szMethodName, NAME_BUFFER_SIZE); 
+		    if (FAILED(hr))
+		    {
+			    // if we couldn't get the function name, then log it
+			    LogString("Unable to find the name for %i\r\n", functionID);
+			    return;
+		    }
+		    // add it to the map
+		    functionInfo = new CFunctionInfo(functionID, W2A(szMethodName));
+		    m_functionMap.insert(std::pair<FunctionID, CFunctionInfo*>(functionID, functionInfo));
+	    }
+#endif
+    }
+
+
     //
     // IUnknown
     //
@@ -51,12 +279,31 @@ public:
     {
         OutputDebugString(L"MyProfiler::QueryInterface");
 
-        if ( riid == IID_IUnknown )
+        if (riid == IID_IUnknown)
+        {
+            OutputDebugString(L"MyProfiler::QueryInterface(IUnknown)");
             *ppv = static_cast<IUnknown*>( this );
-        else if ( riid == IID_ICorProfilerCallback )
+        }
+        else if (riid == IID_ICorProfilerCallback3)
+        {
+            OutputDebugString(L"(Not implemented) MyProfiler::QueryInterface(IID_ICorProfilerCallback3)");
+            // This means that a CLR V4 specific environment variable must be set.
+             *ppv = NULL;
+            return E_NOINTERFACE;
+        }
+        else if (riid == IID_ICorProfilerCallback2)
+        {
+            OutputDebugString(L"MyProfiler::QueryInterface(IID_ICorProfilerCallback2)");
+            *ppv = static_cast<ICorProfilerCallback2*>( this );
+        }
+        else if (riid == IID_ICorProfilerCallback)
+        {
+            OutputDebugString(L"MyProfiler::QueryInterface(IID_ICorProfilerCallback)");
             *ppv = static_cast<ICorProfilerCallback*>( this );
+        }
         else
         {
+            OutputDebugString(L"MyProfiler::QueryInterface(IID_????????)");
             *ppv = NULL;
             return E_NOINTERFACE;
         }
@@ -82,9 +329,10 @@ public:
     //
     // ICorProfilerCallback
     //
-    HRESULT __stdcall Initialize(IUnknown *pICorProfilerInfoUnk)
+    // HRESULT __stdcall Initialize(IUnknown *pICorProfilerInfoUnk)
+    STDMETHOD(Initialize)(IUnknown *pICorProfilerInfoUnk)
     {
-        OutputDebugString(__FUNCTIONW__);
+        OutputDebugString(L"MyProfiler::Initialize (ICorProfilerCallback)");
 
         ICorProfilerInfo2 *pCorProfilerInfo = NULL;
         HRESULT hr = pICorProfilerInfoUnk->QueryInterface(
@@ -102,18 +350,21 @@ public:
         pCorProfilerInfo->SetEventMask(eventMask);
 
         // set the enter, leave and tailcall hooks
-        hr = pCorProfilerInfo->SetEnterLeaveFunctionHooks(
-            (FunctionEnter*)&FunctionEnterNaked,
-            (FunctionLeave*)&FunctionLeaveNaked,
-            (FunctionTailcall*)&FunctionTailcallNaked);
+        hr = pCorProfilerInfo->SetEnterLeaveFunctionHooks2(
+            (FunctionEnter2*)&FunctionEnterNaked,
+            (FunctionLeave2*)&FunctionLeaveNaked,
+            (FunctionTailcall2*)&FunctionTailcallNaked);
 
-         if ( FAILED(hr) )
+        if ( FAILED(hr) )
         {
             OutputDebugString( L"pICorProfilerInf->SetEnterLeaveFunctionHooks FAILED\r\n" );
             return hr;
         }
 
         m_pICorProfilerInfo2 = pCorProfilerInfo;
+
+        // TODO: Use SetFunctionMapper2 to pass userdata
+        hr = pCorProfilerInfo->SetFunctionIDMapper(FunctionMapper);
 
 #if 0
         ICorProfilerInfo2 *pICorProfilerInfo2 = NULL;
@@ -375,7 +626,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ExceptionCLRCatcherExecute( void) { return S_OK; }
 
 
-
+    /// ICorProfilerCallback2
 
 
      virtual HRESULT STDMETHODCALLTYPE ThreadNameChanged( 
@@ -420,6 +671,19 @@ private:
     ULONG m_ref_count;
     CComQIPtr<ICorProfilerInfo2> m_pICorProfilerInfo2;
 };
+
+
+static UINT_PTR __stdcall FunctionMapper(FunctionID functionID, BOOL *pbHookFunction)
+{
+	// make sure the global reference to our profiler is valid.  Forward this
+	// call to our profiler object
+    if (g_pThisMyProfiler != NULL)
+        g_pThisMyProfiler->MapFunction(functionID);
+
+	// we must return the function ID passed as a parameter
+	return (UINT_PTR)functionID;
+}
+
 
 
 HRESULT __stdcall MyProfilerFactory::QueryInterface(const IID& iid, void** ppv)
