@@ -81,10 +81,14 @@
   <ItemGroup>
     <ClCompile Include="DisableMemoryPressure.cpp" />
     <ClCompile Include="DllMain.cpp" />
+    <ClCompile Include="ILStream.cpp" />
     <ClCompile Include="RegSvrHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CorProfilerCallbackStubImpl.hpp" />
     <ClInclude Include="DisableMemoryPressure.hpp" />
+    <ClInclude Include="ILStream.h" />
+    <ClInclude Include="OpCodes.h" />
     <ClInclude Include="RegSvrHelpers.h" />
   </ItemGroup>
   <ItemGroup>
