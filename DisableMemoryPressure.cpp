@@ -36,15 +36,24 @@ void __declspec(naked) FunctionTailcallNaked(FunctionID functionID, UINT_PTR cli
 #endif
 
 
-// this function simply forwards the FunctionEnter call the global profiler object
-void __stdcall FunctionEnterGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo, COR_PRF_FUNCTION_ARGUMENT_INFO *argInfo)
+void __stdcall FunctionEnterGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo, COR_PRF_FUNCTION_ARGUMENT_INFO *argInfo);
+
+// this function simply forwards the FunctionLeave call the global profiler object
+void __stdcall FunctionTailcallGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo)
 {
-	// make sure the global reference to our profiler is valid
     //if (g_pICorProfilerCallback != NULL)
-    //    g_pICorProfilerCallback->Enter(functionID, clientData, frameInfo, argInfo);
-    // argInfo->
+    //    g_pICorProfilerCallback->Tailcall(functionID,clientData,frameInfo);
 }
 
+// this function simply forwards the FunctionLeave call the global profiler object
+void __stdcall FunctionLeaveGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo, COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange)
+{
+    // make sure the global reference to our profiler is valid
+    //if (g_pICorProfilerCallback != NULL)
+    //    g_pICorProfilerCallback->Leave(functionID,clientData,frameInfo,retvalRange);
+}
+
+#ifdef _M_IX86
 // this function is called by the CLR when a function has been entered
 void _declspec(naked) FunctionEnterNaked(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO func, COR_PRF_FUNCTION_ARGUMENT_INFO *argumentInfo)
 {
@@ -70,13 +79,7 @@ void _declspec(naked) FunctionEnterNaked(FunctionID functionID, UINT_PTR clientD
     }
 }
 
-// this function simply forwards the FunctionLeave call the global profiler object
-void __stdcall FunctionLeaveGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo, COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange)
-{
-	// make sure the global reference to our profiler is valid
-    //if (g_pICorProfilerCallback != NULL)
-    //    g_pICorProfilerCallback->Leave(functionID,clientData,frameInfo,retvalRange);
-}
+
 
 // this function is called by the CLR when a function is exiting
 void _declspec(naked) FunctionLeaveNaked(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO func, COR_PRF_FUNCTION_ARGUMENT_RANGE *retvalRange)
@@ -103,12 +106,6 @@ void _declspec(naked) FunctionLeaveNaked(FunctionID functionID, UINT_PTR clientD
     }
 }
 
-// this function simply forwards the FunctionLeave call the global profiler object
-void __stdcall FunctionTailcallGlobal(FunctionID functionID, UINT_PTR clientData, COR_PRF_FRAME_INFO frameInfo)
-{
-    //if (g_pICorProfilerCallback != NULL)
-    //    g_pICorProfilerCallback->Tailcall(functionID,clientData,frameInfo);
-}
 
 // this function is called by the CLR when a tailcall occurs.  A tailcall occurs when the 
 // last action of a method is a call to another method.
@@ -135,6 +132,7 @@ void _declspec(naked) FunctionTailcallNaked(FunctionID functionID, UINT_PTR clie
         ret     16
     }
 }
+#endif // _M_IX86
 
 
 // this function is called by the CLR when a function has been mapped to an ID
