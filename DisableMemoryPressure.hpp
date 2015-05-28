@@ -54,5 +54,3 @@ private:
     ULONG m_ref_count;
 };
 
-class DECLSPEC_UUID("8062FF69-AB86-4183-AC28-9B83DE4AA6C1")
-MyProfiler;
