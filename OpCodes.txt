@@ -1,0 +1,92 @@
+VI.C.2  CIL opcode descriptions
+This subclause contains text, which is intended for use with the C or C++ preprocessor. By
+appropriately defining the macros  OPDEF and  OPALIAS before including this text, it is possible to
+use this to produce tables or code for handling CIL instructions.
+The  OPDEF macro is passed 10 arguments, in the following order:
+A symbolic name for the opcode, beginning with CEE_
+A string that constitutes the name of the opcode and corresponds to the names given in
+Partition III.
+Data removed from the stack to compute this operations result. The possible values here
+are the following:
+a.  Pop0 – no inputs
+b.  Pop1 – one value type specified by data flow
+484 © Ecma International 2012
+c.  Pop1+Pop1 – two input values, types specified by data flow
+d.  PopI – one machine-sized integer
+e.  PopI+Pop1 – Top of stack is described by data flow, next item is a native
+pointer
+f.  PopI+PopI – Top two items on stack are integers (size can vary by instruction)
+g.  PopI+PopI+PopI – Top three items on stack are machine-sized integers
+h.  PopI8+Pop8 – Top of stack is an 8-byte integer, next is a native pointer
+i.  PopI+PopR4 – Top of stack is a 4-byte floating point number, next is a native
+pointer
+j.  PopI+PopR8 – Top of stack is an 8-byte floating point number, next is a native
+pointer
+k.  PopRef – Top of stack is an object reference
+l.  PopRef+PopI – Top of stack is an integer (size can vary by instruction), next
+is an object reference
+m.  PopRef+PopI+PopI – Top of stack has two integers (size can vary by
+instruction), next is an object reference
+n.  PopRef+PopI+PopI8 – Top of stack is an 8-byte integer, then a native-sized
+integer, then an object reference
+o.  PopRef+PopI+PopR4 – Top of stack is an 4-byte floating point number, then a
+native-sized integer, then an object reference
+p.  PopRef+PopI+PopR8 – Top of stack is an 8-byte floating point number, then a
+native-sized integer, then an object reference
+q.  VarPop – variable number of items used, see Partition III for details
+Amount and type of data pushed as a result of the instruction. The possible values here are
+the following:
+a.  Push0 – no output value
+r.  Push1 – one output value, type defined by data flow.
+s.  Push1+Push1 – two output values, type defined by data flow
+t.  PushI – push one native integer or pointer
+u.  PushI8 – push one 8-byte integer
+v.  PushR4 – push one 4-byte floating point number
+w.  PushR8 – push one 8-byte floating point number
+x.  PushRef – push one object reference
+y.  VarPush – variable number of items pushed, see Partition III for details
+Type of in-line argument to instruction. The in-line argument is stored with least
+significant byte first (“little endian”). The possible values here are the following:
+a.  InlineBrTarget – Branch target, represented as a 4-byte signed integer from the
+beginning of the instruction following the current instruction.
+b.  InlineField – Metadata token (4 bytes) representing a FieldRef (i.e., a
+MemberRef to a field) or FieldDef
+c.  InlineI – 4-byte integer
+d.  InlineI8 – 8-byte integer
+e.  InlineMethod – Metadata token (4 bytes) representing a MethodRef (i.e., a
+MemberRef to a method) or MethodDef
+© Ecma International 2012 485
+f.  InlineNone – No in-line argument
+g.  InlineR – 8-byte floating point number
+h.  InlineSig – Metadata token (4 bytes) representing a standalone signature
+i.  InlineString – Metadata token (4 bytes) representing a UserString
+j.  InlineSwitch – Special for the switch instructions, see Partition III for details
+k.  InlineTok – Arbitrary metadata token (4 bytes) , used for ldtoken instruction,
+see Partition III for details
+l.  InlineType – Metadata token (4 bytes) representing a TypeDef, TypeRef, or
+TypeSpec
+m.  InlineVar – 2-byte integer representing an argument or local variable
+n.  ShortInlineBrTarget – Short branch target, represented as 1 signed byte from
+the beginning of the instruction following the current instruction.
+o.  ShortInlineI – 1-byte integer, signed or unsigned depending on instruction
+p.  ShortInlineR – 4-byte floating point number
+q.  ShortInlineVar – 1-byte integer representing an argument or local variable
+Type of opcode. The current classification is of no current value, but is retained for
+historical reasons.
+Number of bytes for the opcode. Currently 1 or 2, can be 4 in future
+First byte of 2-byte encoding, or 0xFF if single byte instruction.
+One byte encoding, or second byte of 2-byte encoding.
+Control flow implications of instruction. The possible values here are the following:
+a.  BRANCH – unconditional branch
+b.  CALL – method call
+c.  COND_BRANCH – conditional branch
+d.  META – unused operation or prefix code
+e.  NEXT – control flow unaltered (“fall through”)
+f.  RETURN – return from method
+g.  THROW – throw or rethrow an exception
+The  OPALIAS macro takes three arguments:
+4.  A symbolic name for a “new instruction” which is simply an alias (renaming for the
+assembler) of an existing instruction.
+A string name for the “new instruction.”
+The symbolic name for an instruction introduced using the  OPDEF macro. The “new
+instruction” is really just an alternative name for this instruction.

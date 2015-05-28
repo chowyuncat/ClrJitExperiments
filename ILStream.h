@@ -4,25 +4,25 @@
 
 enum ParamKind
 {
-     InlineNone = 0,
-
-     ShortInlineVar = 1,
-     ShortInlineI = 1,
-     ShortInlineR = 1,
-     ShortInlineBrTarget = 1,
-
-     InlineI = 4,
-     InlineI8 = 4,
-     InlineField = 4,
-     InlineString = 4,
-     InlineVar = 4,
-     InlineR = 4,
-     InlineType = 4,
-     InlineTok = 4,
-     InlineMethod = 4,
      InlineBrTarget = 4,
+     InlineField = 4,
+     InlineI = 4,
+     InlineI8 = 8,
+     InlineMethod = 4,
+     InlineNone = 0,
+     InlineR = 8,
      InlineSig = 4,
-     InlineSwitch= 4,
+     InlineSwitch = 4, /* TODO */
+     InlineString = 4,
+     InlineTok = 4,
+     InlineType = 4,
+     InlineVar = 2,
+
+     ShortInlineBrTarget = 1,
+     ShortInlineI = 1,
+     ShortInlineR = 4,
+     ShortInlineVar = 1,
+
 };
 
 struct Instruction
