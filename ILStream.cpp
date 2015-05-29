@@ -1,4 +1,5 @@
 #include "ILStream.h"
+#include <Windows.h>
 
 // If the first byte of the standard encoding is 0xFF, then
 // the second byte can be used as 1 byte encoding.  Otherwise                                                               l   b         b
@@ -15,7 +16,7 @@ OPDEF(CEE_NOP,                        "nop",              Pop0,               Pu
 #define OPDEF(canonical_name, string_name, pre_stack_op, post_stack_op, paramtype, opcode_kind, opcode_length_, byte1, byte2, flow) \
 {                             \
     Instruction i;            \
-    i.name = (string_name);   \
+    i.name = L ## string_name; \
     i.opcode1 = (byte1);        \
     i.opcode2 = (byte2);        \
     i.opcode_length = (opcode_length_); \

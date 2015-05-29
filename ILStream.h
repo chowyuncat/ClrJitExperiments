@@ -27,7 +27,7 @@ enum ParamKind
 
 struct Instruction
 {
-    std::string name;
+    std::wstring name;
     uint8_t opcode1;
     uint8_t opcode2;
     uint8_t opcode_length;
